@@ -3,9 +3,9 @@
 $      = require "jquery"
 _      = require "underscore"
 
-Signal = require "./lib/Signal.coffee"
-Bus    = require "./lib/Bus.coffee"
-Source = require "./lib/Source.coffee"
+Signal = require "./lib/signal.coffee"
+Bus    = require "./lib/bus.coffee"
+Source = require "./lib/source.coffee"
 
 Electron = {}
 
@@ -32,4 +32,4 @@ Electron.fromEventTarget = (target, eventName, initialSignalName) ->
     source
 
 
-exports = SSB
+exports = Electron
