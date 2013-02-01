@@ -4,6 +4,7 @@ ff = (f, args) -> _.bind f, {}, args...
 class Signal
     transforms: []
     frame: []
+    _frame: _(@frame)
     source: null
 
     # source and transforms are used for the recursive generation of new signals as transforms are contributed
@@ -11,11 +12,10 @@ class Signal
     # signals always have a source object that they are bound to - thus we can trace their events
     constructor: (@source, @transforms = [], @framesize = 2) ->
         @framesize = 2 if @framesize < 2
-        @source.signals.push(this) # add self to source
 
     # create new signal with the added transforms, replace at source, and return the new signal from this function
     addTransform: (tranform) ->
-        (new Signal(@source, @transforms, @framesize)).transforms.push(transform)
+        (new Signal(@source, (@transforms.push(transform)), @framesize))
 
     # Log everything moving through this
     log: (event) ->
@@ -56,24 +56,23 @@ class Signal
     span: (size, args..., f) ->
         # captures a range of values using the frame
 
-    # Send value through all transforms - called whenever a new value is presented
-    propagate : (event) ->
-        # add event into the frame and if we're over the framesize, pop off the value we don't need
-        @frame.push(event)
-        @frame.pop() if @frame.length > @framesize
-        # compute all transforms return value
-        _.compose((transforms.reverse())...)(event)
-        this
+    # Send value through all transforms - called whenever a new value is presented - optional callback to 
+    propagate : (event, callback) ->
+        @frame.push(event)                                      # add event to frame
+        @frame.pop() if @frame.length > @framesize              # if over framesize, remove old events
+        computed = _.compose((@transforms.reverse())...)(event) # compute all transforms
+        callback(computed) if callback                          # if callback is set, call with computed
+        this                                                    # return self
 
     # Change the frame size, the case where you'd like to capture more values within the frame
     changeFrameSize: (size) ->
-        @framesize = size
-        this
+        @framesize = size # set frame size value
+        this              # return self for chaining
 
     # merge another signal into this signal
     merge: (signal) ->
-        signal.react (event) =>
-            @emit(event)
+        signal.react (event) => # set a reaction transform on the other signal
+            @emit(event)        # it routes it's events through this one as well
 
     # sample by another signal
     sampleBy: (signal) ->

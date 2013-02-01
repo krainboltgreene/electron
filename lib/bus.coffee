@@ -1,5 +1,5 @@
 _      = require "underscore"
-Source = require "./Source.coffee"
+Source = require "./source.coffee"
 
 ff = (f, args) -> _.bind f, {}, args...
 

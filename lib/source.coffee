@@ -1,17 +1,27 @@
 _      = require "underscore"
-Signal = require "./Signal.coffee"
-Bus    = require "./Bus.coffee"
+Signal = require "./signal.coffee"
+Bus    = require "./bus.coffee"
 
 class Source
     signals: []
     named: {}
     ended: false
 
-    constructor: () ->
-        #no initial signal we need to create one
+    # create new source
+    constructor: (signalName) ->
+        @createSignal(signalName)
+        return this
 
-    createSignal: (name) ->
-        @named[name] = new Signal(this) if name else new Signal(this)
+    # create new signal and add to this source
+    createSignal: (signalName) ->
+        signal = new Signal(this)
+        if signalName
+            @signals.push signal
+            @named[name] = signal
+        else
+            @signals.push signal
+        return signal
+
 
     # handle the emission of events from the source, propagating to signals, can also be used manually
     emit: (event) ->
@@ -22,15 +32,18 @@ class Source
     poll: (timer = 5000, args..., func) ->
         setInterval ->
             _(@signals).map (signal) ->
-                signal.propagate (func args...) 
+                signal.propagate (func args...)
         , timer
 
     # emit a value on an interval
     interval: (timer = 5000, value) ->
         @poll timer, value
 
-    # remove all signals and their listeners, send died to all signals
+    # remove all signals and their listeners, send kill to all signals
     kill: () ->
+        @signals = _(@signals).map (signal) ->
+            signal.propagate ("_commitsudoku") #tell all signals that they need to die
+        @signals = []
 
 
 exports = Source
