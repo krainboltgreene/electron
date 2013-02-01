@@ -14,4 +14,3 @@ describe "Electron", ->
 
     describe "#asEventStream()", -> #this is a fairly difficult one to test since it requires jquery 
         # going to spin up a phantomjs instance JUST FOR THIS I suppose
-

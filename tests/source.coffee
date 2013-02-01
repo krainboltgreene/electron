@@ -44,13 +44,10 @@ describe "Source", ->
         before ->
             createdSignal = source.createSignal()
             source.createSignal "test"
-
-            emitSpyNamed = sinon.spy()
+            emitSpyNamed   = sinon.spy()
             emitSpyUnNamed = sinon.spy()
-
             source.named.test.react emitSpyNamed
             createdSignal.react emitSpyUnNamed
-
             source.emit("test")
         it "should send a value through each of the signals"
             emitSpyNamed.should.have.been.calledWith "test"
