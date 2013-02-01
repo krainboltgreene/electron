@@ -28,16 +28,14 @@ class Source
         _(@signals).map (signal) ->
             signal.propagate(event)
 
+    # these are probbably things that belong in electron for generating sources
     # poll a function with arguments and propagate the results
     poll: (timer = 5000, args..., func) ->
-        setInterval ->
-            _(@signals).map (signal) ->
-                signal.propagate (func args...)
-        , timer
+        setInterval (-> @emit func args...), timer
 
     # emit a value on an interval
     interval: (timer = 5000, value) ->
-        @poll timer, value
+        setInterval (-> value), timer
 
     # remove all signals and their listeners, send kill to all signals
     kill: () ->
