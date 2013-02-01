@@ -79,14 +79,13 @@ class Signal
     # merge another signal into this signal
     merge: (signal) ->
         signal.react (event) => # set a reaction transform on the other signal
-            @emit(event)        # it routes it's events through this one as well
+            @propagate(event)        # it routes it's events through this one as well
 
     # sample by another signal
     sampleBy: (signal) ->
-        bus = new Bus()
-        freshSignal = new Signal(bus)
-        signal.react (event) =>
-            bus.emit([_.last(@frame), event])
+        freshSignal = (new Bus()).createSignal()
+        signal.react (event) =>               # when the other signal emits
+            bus.emit([_.last(@frame), event]) # emit through the bus the last value of this signal
         freshSignal
 
 

@@ -4,11 +4,14 @@ should = chai.should()
 
 chai.use(require "sinon-chai")
 
-Source = require "../source.coffee"
-Signal = require "../signal.coffee"
+Source = require "../lib/source.coffee"
+Signal = require "../lib/signal.coffee"
 
 describe "Signal", ->
 
+    # I don't think we should do this, it seems convienient, but the case for each one should
+    # be established in a code-local manner so it is immediatedly apparent what the problem is
+    # code-locality and code-dryness need to be counterbalanced
     beforeEach ->
         source = new Source()
         signal = new Signal()
@@ -114,9 +117,7 @@ describe "Signal", ->
             reactSpy = sinon.spy()
             signalFromSource.skip(2).react reactSpy
         it "should not call reactSpy until it has been called twice", ->
-            source.emit(1)
-            source.emit(2)
-            source.emit(3)
+            source.emit(1).emit(2).emit(3)
             reactSpy.should.have.been.calledOnce
 
     # not yet implemented
@@ -140,7 +141,21 @@ describe "Signal", ->
 
     describe "#merge()", ->
         before ->
-
+            reactSpy = sinon.spy()
+            signalOne = new Signal()
+            signalTwo = new Signal()
+            singalOneMerged = signalOne.merge(signalTwo).react reactSpy
+            signalTwo.propagate 5
+        it "should allow signalOne to be propagated when signalTwo does", ->
+            reactSpy.should.have.been.called
 
     describe "#sampleBy()", ->
         before ->
+            reactSpy = sinion.spy()
+            signalOne = new Signal()
+            signalTwo = new Signal()
+            signalOne.sampleBy(signalTwo).react reactSpy
+            signalOne.propagate(2).propagate(3).propagate(4)
+            signalTwo.propagate 3
+         it "should only react when signalTwo emits, and then it should take the last value of signalOne", ->
+             reactBy.should.have.been.calledWith [4, 3]

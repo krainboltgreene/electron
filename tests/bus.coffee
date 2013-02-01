@@ -4,6 +4,8 @@ should = chai.should()
 
 chai.use(require "sinon-chai")
 
+Bus = require "../lib/bus.coffee"
+
 describe "Bus", ->
 
     describe "#constructor()", ->

@@ -4,6 +4,8 @@ should = chai.should()
 
 chai.use(require "sinon-chai")
 
+Electron = require "../electron.coffee"
+
 describe "Electron", ->
 
     describe "#fromPromise()", ->

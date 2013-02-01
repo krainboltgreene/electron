@@ -27,6 +27,7 @@ class Source
     emit: (event) ->
         _(@signals).map (signal) ->
             signal.propagate(event)
+        return this #allow emission chaining
 
     # these are probbably things that belong in electron for generating sources
     # poll a function with arguments and propagate the results
