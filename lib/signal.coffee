@@ -38,8 +38,11 @@ class Signal
             if result then result else event
 
     # captures a range of events using the frame, if larger than frame, defaults to entire frame
-    span: (size, args..., f) ->
+    # if smaller than frame or full length unavailable, don't continue
+    span: (size) ->
         @addTransform (event) ->
+            event.value = [@frame.slice[-1, -1*size]..., event.value]
+            event
 
     # Log everything moving through this
     log: (logger = console.log) ->
@@ -51,9 +54,6 @@ class Signal
     filter: (args..., f) ->
         @addTransform (event) ->
             if not ff(f, args)(event) then event else undefined
-
-    # Filter for errors only
-    errors: -> @filter (event) -> event.meta.isError
 
     # Skip duplicate events
     skipDuplicates: (isEqual = (a, b) -> a is b) ->

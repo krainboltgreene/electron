@@ -91,10 +91,15 @@ describe "Signal", ->
             signal.emit(3)
             skipDuplicatesSpy.should.have.been.calledTwice
 
-
-    describe "#errors()", ->
     # not yet implemented
     describe "#span()", ->
+        signal = new Signal()
+        reactSpy = sinon.spy()
+        signal.setFrameSize(10).span(5).react reactSpy
+        for i in 0..20
+            signal.emit(i)
+        it "should react with the frame", ->
+            reactSpy.should.have.been.calledWith
 
     describe "#log(logger)", ->
         signal = new Signal()
