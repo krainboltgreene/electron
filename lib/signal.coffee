@@ -1,92 +1,124 @@
 _  = require "underscore"
-ff = (f, args) -> _.bind f, {}, args...
+ff = (f, args) -> _.bind(f, {}, args...) if f
+
+Event = require "./event.coffee"
 
 class Signal
-    transforms: []
-    framesize: 2
-    frame: []
-    _frame: _(@frame)
-    source: null
+    isDead     : false
+    framesize  : 2
+    frame      : []
+    linked     : []
+    transforms : [] #initial transform merely returns input
+    # we should still use an array of transforms so that even if you call emit later you get
+    # the same result
 
-    # source and transforms are used for the recursive generation of new signals as transforms are contributed
-    # we should be able to create signals _without_ sources
-    # signals always have a source object that they are bound to - thus we can trace their events
-    # why are we keeping track of their sources, who cares, their source doesn't tell you ANYTHING
-    # shouldn't adding transforms need to register themselves with the same source in order to get events?
-    constructor: (@source, @transforms = [], @framesize = 2) ->
+    constructor: (@transforms = [((x)->x)], @framesize = 2) ->
         @framesize = 2 if @framesize < 2
 
-    # create new signal with the added transforms, replace at source, and return the new signal from this function
-    addTransform: (tranform) ->
-        (new Signal(@source, (@transforms.push(transform)), @framesize))
+    # create new signal with the added transforms, and return the new signal from this function
+    addTransform: (transform) ->
+        transforms = [@transforms..., transform]
+        signal = new Signal(transforms, @framesize) # create new signal with transforms
+        @linked = [@linked..., signal]
+        signal                                      # return the new signal
+                                                    # memoize repeated values with underscore
+    fork: () ->
+        signal = new Signal(@transforms, @framesize) # create copy of this signal
+        @linked = [@linked..., signal]
+        signal                                      # return the new signal
+
+    #### ========================================
+    #  Transforms: All of these return new signals
+    #### ========================================
+
+    # React to events moving through the signal
+    react: (args..., f) ->
+        @addTransform (event) ->
+            result = ff(f, args)(event)
+            if result then result else event
+
+    # captures a range of events using the frame, if larger than frame, defaults to entire frame
+    span: (size, args..., f) ->
+        @addTransform (event) ->
 
     # Log everything moving through this
-    log: (event) ->
+    log: (logger = console.log) ->
         @addTransform (event) ->
             logger(event)
             event
 
-    # extend signal to overwrite this?
-    # this needs to be functional
-    logger: (value) ->
-        console.log(value)
-
-    replaceLogger: (newFunction) ->
-        @logger = newFunction
-
-    # Filter for errors only
-    # TODO: We need to wrap events in something so that this can be done properly
-    errors: ->
-        @filter (value) -> value[0] is "_error"
-
-    # Skip duplicate values
-    skipDuplicates: (isEqual = (a, b) -> a is b) ->
-        @filter (event) -> isEqual @_frame.initial().last(), event
-
-    # React to values moving through the signal
-    react: (args..., f) ->
-        @addTranform (event) ->
-            ff(f, args)(event) if event
-
-    # Filter values moving through the signal
+    # Filter events moving through the signal - pass along if false
     filter: (args..., f) ->
         @addTransform (event) ->
-            event if ff(f, args)(event) else false
+            if not ff(f, args)(event) then event else undefined
 
-    # Skip number of values moving through the signal
-    skip: (count) ->
-        @addTransform (event) ->
-            _.after(count, (-> event)) # util this function has been called "count" times, don't compute
+    # Filter for errors only
+    errors: -> @filter (event) -> event.meta.isError
 
-    span: (size, args..., f) ->
-        # captures a range of values using the frame, if larger than frame, defaults to entire frame
-        # note that all of these transform functions affect the subsequent ones
-        @addTransform (event) ->
+    # Skip duplicate events
+    skipDuplicates: (isEqual = (a, b) -> a is b) ->
+        @filter (event) =>
+            if _.last(_.initial(@frame))
+                isEqual _.last(_.initial(@frame)).value, event.value
+            else if event.value
+                false
+            else
+                true
 
-    # Send value through all transforms - called whenever a new value is presented - optional callback to 
-    propagate : (event, callback) ->
-        @frame.push(event)                                      # add event to frame
-        @frame.pop() if @frame.length > @framesize              # if over framesize, remove old events
-        computed = _.compose((@transforms.reverse())...)(event) # compute all transforms
-        callback(computed) if callback                          # if callback is set, call with computed
+    #### ========================================
+    #  End of Transforms
+    #### ========================================
+    
+    # Send event through all transforms - called whenever a new event is presented - optional callback to 
+    emit : (value, meta, memoized) ->
+        return false if @isDead or not value                                # disallow emitting if dead
+        if meta and meta.isEnd
+            @isDead     = true
+            @links      = []
+            @transforms = []
+            _(@linked).each (link) -> link.emit(value, meta, true) if @linked
+            return false
+        event = new Event(value, meta)
+        if @frame.length > @framesize then @frame = [_.rest(@frame)..., event]  else @frame = [@frame..., event]
+        if memoized
+            computed = _(@transforms).last()(event)
+        else
+            computed = (compute = (i, evt) =>
+                if i< @transforms.length then resultEvent = @transforms[i] evt else return evt
+                if resultEvent and resultEvent.value then return compute i + 1, resultEvent else return undefined
+            )(0, event)
+        _(@linked).each (link) -> link.emit(computed.value, computed.meta, true) if computed
         this                                                    # return self
 
-    # Change the frame size, the case where you'd like to capture more values within the frame
-    changeFrameSize: (size) ->
+    # Change the frame size, the case where you'd like to capture more events within the frame
+    setFrameSize: (size) ->
         @framesize = size # set frame size value
         this              # return self for chaining
 
-    # merge another signal into this signal
+    # on another signal's reaction, emit its value from this one
     merge: (signal) ->
-        signal.react (event) => # set a reaction transform on the other signal
-            @propagate(event)        # it routes it's events through this one as well
+        signal.react (event) =>
+            @emit(event.value)
+        this
 
-    # sample by another signal
-    sampleBy: (signal) ->
-        freshSignal = (new Bus()).createSignal()
-        signal.react (event) =>               # when the other signal emits
-            bus.emit([_.last(@frame), event]) # emit through the bus the last value of this signal
-        freshSignal
+    # on another signal's reaction, emit its alue from this one
+    mergeInner: (signal) ->
+        @merge signal
 
+    # on this signal's reaction, emit the same value from another one
+    mergeOuter: (signal) ->
+        @react (event) ->
+            signal.emit(event.value)
+        this
 
-exports = Signal
+    # on another signal's reaction emit the combined values of this signal's last event, and the other new event
+    join: (signal) ->
+        newSignal = new Signal()
+        signal.react (event) =>
+            newSignal.emit [(if _.last(@frame) then _.last(@frame).value else undefined), event.value] # emit through the bus the last event of this signal
+        newSignal
+
+    # remove all signals and their listeners, send kill to all signals
+    kill: () -> @emit("_commitsudoku", {isEnd: true})
+
+module.exports = exports = Signal

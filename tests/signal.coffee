@@ -4,176 +4,141 @@ should = chai.should()
 
 chai.use(require "sinon-chai")
 
-Source = require "../lib/source.coffee"
+_ = require "underscore"
+
 Signal = require "../lib/signal.coffee"
-
-
+Event  = require "../lib/event.coffee"
 
 describe "Signal", ->
 
     describe "#constructor()", ->
-        before ->
-            signal = new Signal()
+        signal = new Signal()
         it "should have built a new signal", ->
             signal.should.exist
-        it "should have an empty array of transforms", ->
-            signal.should.have.property "transforms", []
+        it "should have array to hold transforms", ->
+            signal.should.have.property "transforms"
         it "should have default framesize of 2", ->
-            signalFromSource.should.have.property "frameSize", 2
+            signal.should.have.property "framesize", 2
         it "should have an empty frame array", ->
-            signal.should.have.property "frame", []
+            signal.should.have.property "frame"
         it "should have a null source property", ->
-            signal.should.have.property "source", null
+            signal.should.not.have.property "source"
 
-
-
-    describe "#constructor(source)", ->
-        before ->
-            source = new Source()
-            signalFromSource = source.createSignal()
-        it "should have built a new signal", ->
-            signalFromSource.should.exist
-        it "should have an empty array of transforms", ->
-            signalFromSource.should.have.property "transforms", []
-        it "should have default framesize of 2", ->
-            signalFromSource.should.have.property "frameSize", 2
-        it "should have an empty frame array", ->
-            signalFromSource.should.have.property "frame", []
-        it "should have the source that initalized it in it's source property", ->
-            signalFromSource.should.have.property "source", source
-
-
-
-    describe "#changeFrameSize()", ->
-
+    describe "#setFrameSize()", ->
         describe "where frame is default size", ->
-            before ->
-                signalFromSource.changeFrameSize(5)
+            signal = new Signal()
+            signal.setFrameSize(5)
             it "should have changed the frame size to 5", ->
-                signalFromSource.framesize.should.equal 5
-
+                signal.framesize.should.equal 5
+        ###
         describe "where frame was larger and populated prior", ->
-            before ->
-                signalFromSource.changeFrameSize(5)
-                for i in 0..15
-                    source.emit(i)
-                signalFromSource.changeFrameSize(2)
-             it "should have sliced off whatever values were in the frame outside of the new size", ->
+            signal = new Signal()
+            signal.changeFrameSize(5)
+            for i in [0..15]
+                signal.emit(i)
+            signal.changeFrameSize(2)
+            it "should have sliced off whatever values were in the frame outside of the new size", ->
+        ###
 
-    
+    describe "#emit()", ->
+        signal = new Signal()
+        reactSpy = sinon.spy()
+        signal.react reactSpy
+        signal.emit 10
+        it "should have emitd the value through the signal", ->
+            reactSpy.should.have.been.calledWith (new Event(10))
 
-    describe "methods for: logging signals and manipulating the logging methods", ->
-
-        describe "#replaceLogger()", ->
-            before ->
-                newLogger = (value, callback) ->
-                    callback(value + "log")
-                signalFromSource.replaceLogger newLogger
-            it "should have replaced the logger function with newLogger", ->
-                signalFromSource.logger.should.equal newLogger
-
-        describe "#logger()", -> # I am currently unsure how to property test the default state of this
-
-        # this test could be more thorough, I'm sure many can, but mostly this one
-        describe "#log()", ->
-            before ->
-                logSpy = sinon.spy()
-                newLogger = (value) ->
-                    logSpy(value + "log")
-                signalFromSource.replaceLogger newLogger
-                testingLog = signalFromSource.log()
-            it "should be called as a transform when an event passes through the source", ->
-                source.emit (2)
-                logSpy.should.have.been.calledWith "2log"
+    describe "#addTransform()", ->
+        signal = new Signal()
+        reactSpy = sinon.spy()
+        signal.addTransform reactSpy
+        signal.emit(2)
+        it "should have added a transform that increases event value by one", ->
+            reactSpy.should.have.been.calledWith (new Event(2))
 
 
+    describe "#react()", ->
+        signal = new Signal()
+        reactSpy = sinon.spy()
+        signal.react reactSpy
+        signal.emit(2)
+        it "should have called reactSpy with event 2", ->
+            reactSpy.should.have.been.called
+            reactSpy.should.have.been.calledWith (new Event(2))
 
-    describe "methods for: manipulation of signal processing and generation of events", ->
+    describe "#filter()", ->
+        signal = new Signal()
+        reactSpy = sinon.spy()
+        signal.filter( (event) -> event > 2).react reactSpy
+        it "should call reactSpy when filter is matched", ->
+            signal.emit(2)
+            reactSpy.should.have.been.calledOnce
+        it "should not call reactSpy when event does match the filter", ->
+            signal.emit(8)
+            reactSpy.should.not.have.been.calledOnce
 
-        describe "#propagate()", ->
-            before ->
-                reactSpy = sinon.spy()
-                signal.react reactSpy
-                signal.propagate 10
-            it "should have propagated the value through the signal", ->
-                reactSpy.should.have.been.callWith 10
-
-        describe "#addTransform()", ->
-            before ->
-                signalFromSource.addTransform (event) ->
-                    event++
-                source.emit(2)
-            it "should have added a transform that increases event value by one", ->
-                signalFromSource._frame.last().should.equal 3
-
-        # needs more work on signals and event management
-        describe "#errors()", ->
-
-        describe "#react()", ->
-            before ->
-                reactSpy = sinon.spy()
-                signalFromSource.react reactSpy
-                source.emit(2)
-            it "should have called reactSpy with event 2", ->
-                reactSpy.should.have.been.called
-
-        # this could be structured better in term of use of sinon
-        describe "#skipDuplicates()", ->
-            before ->
-                skipDuplicatesSpy = sinon.spy()
-                signalFromSource.skipDuplicates().react skipDuplicatesSpy
-            it "should react to the first emission"
-                source.emit(2)
-                skipDuplicatesSpy.should.have.been.calledOnce
-            it "should not react to the second identical emission"
-                source.emit(2)
-                skipDuplicatesSpy.should.have.been.calledOnce
-            it "should react to the different third emission"
-                source.emit(3)
-                skipDuplicatesSpy.should.have.been.calledTwice
-
-        describe "#filter()", ->
-            before ->
-                reactSpy = sinon.spy()
-                signalFromSource.filter( (event) -> event > 2).react reactSpy
-            it "should not call reactSpy when event does not match filter", ->
-                source.emit(2)
-                reactSpy.should.not.have.been.called
-            it "should call reactSpy when event does match the filter", ->
-                source.emit(8)
-                reactSpy.should.not.have.been.called
-
-        describe "#skip()", ->
-            before ->
-                reactSpy = sinon.spy()
-                signalFromSource.skip(2).react reactSpy
-                source.emit(1).emit(2).emit(3)
-            it "should not call reactSpy until it has been called twice", ->
-                reactSpy.should.have.been.calledOnce
-
-        # not yet implemented
-        describe "#span()", ->
-            before ->
-                
+    describe "#skipDuplicates()", ->
+        signal = new Signal()
+        skipDuplicatesSpy = sinon.spy()
+        signal.skipDuplicates().react skipDuplicatesSpy
+        it "should react to the first emission", ->
+            signal.emit(2)
+            skipDuplicatesSpy.should.have.been.calledOnce
+        it "should not react to the second identical emission", ->
+            signal.emit(2)
+            skipDuplicatesSpy.should.have.been.calledOnce
+        it "should react to the different third emission", ->
+            signal.emit(3)
+            skipDuplicatesSpy.should.have.been.calledTwice
 
 
-    describe "signal management methods", ->
-        beforeEach ->
-            reactSpy = sinon.spy()
-            signalOne = new Signal()
-            signalTwo = new Signal()
+    describe "#errors()", ->
+    # not yet implemented
+    describe "#span()", ->
 
-        describe "#merge()", ->
-            before ->
-                singalOneMerged = signalOne.merge(signalTwo).react reactSpy
-                signalTwo.propagate 5
-            it "should allow signalOne to be propagated when signalTwo does", ->
-                reactSpy.should.have.been.called
+    describe "#log(logger)", ->
+        signal = new Signal()
+        logSpy = sinon.spy()
+        testingLog = signal.log (event) ->
+            logSpy(event.value + "log")
+        signal.emit (2)
+        it "should be called as a transform when an event passes through the source", ->
+            logSpy.should.have.been.calledWith "2log"
 
-        describe "#sampleBy()", ->
-            before ->
-                signalOne.sampleBy(signalTwo).react reactSpy
-                signalOne.propagate(2).propagate(3).propagate(4)
-                signalTwo.propagate 3
-             it "should only react when signalTwo emits, and then it should take the last value of signalOne", ->
-                 reactBy.should.have.been.calledWith [4, 3]
+    describe "#merge() #mergeInner()", ->
+        signalOne = new Signal()
+        signalTwo = new Signal()
+        reactSpy = sinon.spy()
+        signalOne.merge(signalTwo).react reactSpy
+        signalTwo.emit "mergeInner"
+        it "should cause signalOne to be emit when signalTwo does", ->
+            reactSpy.should.have.been.called
+
+    describe "#mergeOuter()", ->
+        signalOne = new Signal()
+        signalTwo = new Signal()
+        reactSpy = sinon.spy()
+        signalTwo.react reactSpy
+        signalOne.mergeOuter(signalTwo)
+        signalOne.emit "mergeOuter"
+        it "should cause signalTwo to emit when signalOne does", ->
+            reactSpy.should.have.been.called
+
+    describe "#join()", ->
+        signalOne = new Signal()
+        signalTwo = new Signal()
+        reactSpy = sinon.spy()
+        signalOne.join(signalTwo).react reactSpy
+        signalOne.emit(2).emit(3).emit(4)
+        signalTwo.emit 3
+        it "should only react when signalTwo emits, and then it should take the last value of signalOne", ->
+             reactSpy.should.have.been.calledWith new Event([4, 3])
+
+    describe "#kill()", ->
+        signal = new Signal()
+        reactSpy = sinon.spy()
+        signal.react reactSpy
+        signal.kill()
+        signal.emit 3
+        it "prevent all emits from touching any reactors or causing any computation", ->
+             reactSpy.should.not.have.been.called

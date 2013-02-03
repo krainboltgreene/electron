@@ -1,5 +1,4 @@
 _      = require "underscore"
-Source = require "./source.coffee"
 
 ff = (f, args) -> _.bind f, {}, args...
 
@@ -7,11 +6,11 @@ ff = (f, args) -> _.bind f, {}, args...
 # it merely aids in keeping track of which is which
 # can also be used to organize signals due to this
 
-class Bus extends Source
+class Bus
     signals: []
 
-    constructor: (signalsObj) ->
-        _.extend @signals, signalsObj
+    constructor: (signals...) ->
+        @signals = signals
 
     # add a new signal to the bus
     addSignal: (signal) ->
