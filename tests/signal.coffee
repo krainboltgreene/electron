@@ -17,8 +17,8 @@ describe "Signal", ->
             signal.should.exist
         it "should have array to hold transforms", ->
             signal.should.have.property "transforms"
-        it "should have default framesize of 2", ->
-            signal.should.have.property "framesize", 2
+        it "should have default frameSize of 2", ->
+            signal.should.have.property "frameSize", 2
         it "should have an empty frame array", ->
             signal.should.have.property "frame"
         it "should have a null source property", ->
@@ -29,7 +29,7 @@ describe "Signal", ->
             signal = new Signal()
             signal.setFrameSize(5)
             it "should have changed the frame size to 5", ->
-                signal.framesize.should.equal 5
+                signal.frameSize.should.equal 5
         ###
         describe "where frame was larger and populated prior", ->
             signal = new Signal()
@@ -39,6 +39,16 @@ describe "Signal", ->
             signal.changeFrameSize(2)
             it "should have sliced off whatever values were in the frame outside of the new size", ->
         ###
+        describe "testing the frame itself after frame size change", ->
+            signal = new Signal()
+            signal.setFrameSize(5)
+            for i in [0..20]
+                signal.emit i
+            it "should have five values in the frame", ->
+                signal.frame.should.have.length 5
+            it "should have 15 to 20 events as those values", ->
+                signal.frame.toString().should.equal [new Event(i) for i in [16..20]].toString()
+
 
     describe "#emit()", ->
         signal = new Signal()
@@ -55,7 +65,6 @@ describe "Signal", ->
         signal.emit(2)
         it "should have added a transform that increases event value by one", ->
             reactSpy.should.have.been.calledWith (new Event(2))
-
 
     describe "#react()", ->
         signal = new Signal()
@@ -91,15 +100,15 @@ describe "Signal", ->
             signal.emit(3)
             skipDuplicatesSpy.should.have.been.calledTwice
 
-    # not yet implemented
     describe "#span()", ->
         signal = new Signal()
         reactSpy = sinon.spy()
         signal.setFrameSize(10).span(5).react reactSpy
-        for i in 0..20
+        for i in [1..10]
             signal.emit(i)
         it "should react with the frame", ->
-            reactSpy.should.have.been.calledWith
+            reactSpy.should.have.been.called
+            reactSpy.should.have.been.calledWith new Event([6..10])
 
     describe "#log(logger)", ->
         signal = new Signal()

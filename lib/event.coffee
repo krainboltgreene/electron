@@ -1,11 +1,11 @@
 class Event
-    value       : undefined
+    value       : "default"
     meta:
         isError     : false
         isEnd       : false
         isNull      : false
 
-    constructor: (@value, meta = {}) ->
+    constructor: (@value = "default", meta = {}) ->
         @meta = meta if meta
 
 module.exports = exports = Event

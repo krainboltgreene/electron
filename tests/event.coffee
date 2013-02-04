@@ -8,4 +8,9 @@ Event = require "../lib/event.coffee"
 
 describe "Event", ->
 
-    describe "#constructor()", ->
+    describe "#constructor(value)", ->
+        event = new Event()
+        it "should have property value", ->
+            event.should.have.property "value"
+        it "should have property meta", ->
+            event.should.have.property "meta"
