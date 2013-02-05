@@ -37,7 +37,7 @@ Electron.fromPromise = (promise) ->
     promise.then(((value)-> signal.emit value), ((value) -> signal.emit value, {isError: true}))
     signal
 
-if window
+if window?
     window.Electron = Electron
     (window.jQuery || window.Zepto)?.fn.asSignal = (eventName) ->
         signal = new Signal()
