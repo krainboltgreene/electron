@@ -1,28 +1,29 @@
 # Electron
-
-$      = require "jquery"
 _      = require "underscore"
 
 Signal = require "./lib/signal.coffee"
 Bus    = require "./lib/bus.coffee"
-Source = require "./lib/source.coffee"
+Event    = require "./lib/event.coffee"
 
-Electron = {}
-
+Electron        = {}
 Electron.Bus    = Bus
-Electron.Source = Source
 Electron.Signal = Signal
+Electron.Event  = Event
 
-Electron.fromPromise = (wut) ->
+Electron.fromPromise = (promise) ->
+    signal = new Signal()
+    #onSuccess, onError
+    promise.then(signal.emit, signal.emit)
+    signal
 
-Electron.fromEventTarget = (target, eventName, initialSignalName) ->
+Electron.fromEventTarget = (target, eventName) ->
     signal = new Signal()
     if target.addEventListener
-        unbind = -> target.removeEventListener(eventName, soure.handler, false)
-        target.addEventListener(eventName, signal.emit, false)
+        unbind = -> target.removeEventListener(eventName, signal.emit, false)
+        target.addEventListener(eventName, ((value) -> signal.emit value), false)
     else
         unbind = -> target.removeListener(eventName, signal.emit)
-        target.addListener(eventName, signal.emit)
+        target.addListener eventName, ((value) -> signal.emit value)
     signal
 
 Electron.fromPoll = (timer = 5000, args..., func) ->
@@ -35,13 +36,13 @@ Electron.fromInterval = (timer = 5000, value) ->
     setInterval (-> signal.emit(value)), timer
     signal
 
+unless module and module.exports
+    $      = require "jquery"
+    (this.jQuery || this.Zepto)?.fn.asEventStream = (eventName) ->
+        signal = new Signal()
+        unbind = -> this.off(eventName, signal.emit)
+        this.on(eventName, signal.emit)
+        signal
 
 
-(this.jQuery || this.Zepto)?.fn.asEventStream = (eventName, initialSignalName) ->
-    signal = new Signal()
-    unbind = -> this.off(eventName, signal.emit)
-    this.on(eventName, signal.emit)
-    signal
-
-
-exports = Electron
+module.exports = exports = Electron

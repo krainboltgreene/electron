@@ -22,6 +22,7 @@ class Signal
 
     # Send event through all transforms - called whenever a new event is presented - optional callback to 
     emit : (value, meta, memoized) ->
+        console.log @ if @_events
         return false if @isDead or not value                                # disallow emitting if dead
         if meta and meta.isEnd
             @isDead     = true
