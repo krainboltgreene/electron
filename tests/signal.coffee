@@ -4,8 +4,6 @@ should = chai.should()
 
 chai.use(require "sinon-chai")
 
-_ = require "underscore"
-
 Signal = require "../lib/signal.coffee"
 Event  = require "../lib/event.coffee"
 

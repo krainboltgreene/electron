@@ -1,4 +1,4 @@
-_      = require "underscore"
+_      = require "lodash"
 
 ff = (f, args) -> _.bind f, {}, args...
 

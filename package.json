@@ -1,0 +1,39 @@
+{
+  "name": "electron",
+  "version": "0.0.0",
+  "description": "Framed functional reactive event handling library",
+  "main": "electron.coffee",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "browserify": "~1.17.3",
+    "lodash": "~1.0.0-rc.3"
+  },
+  "devDependencies": {
+    "mocha": "~1.8.1",
+    "coffee-script": "~1.4.0",
+    "chai": "~1.4.2",
+    "sinon-chai": "~2.3.1",
+    "sinon": "~1.5.2",
+    "jsdom": "~0.3.4"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kvey/electron.git"
+  },
+  "keywords": [
+    "functional",
+    "reactive",
+    "framed",
+    "events",
+    "signal"
+  ],
+  "author": "Colton Pierson",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "gitHead": "d8d3bf9e25de51b7011828ea40c15f95cf09875a"
+}

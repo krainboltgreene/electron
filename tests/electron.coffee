@@ -1,8 +1,8 @@
 EventEmitter = require("events").EventEmitter
 chai   = require "chai"
 sinon  = require "sinon"
-#phantom = require "phantom"
 should = chai.should()
+jsdom  = require "jsdom"
 
 chai.use(require "sinon-chai")
 
@@ -43,20 +43,4 @@ describe "Electron", ->
             reactSpyInterval.should.have.been.calledWith (new Event(5))
             reactSpyInterval.should.have.been.calledTwice
 
-###
-    describe "browser dependent tests -- ", ->
-        before (done) ->
-            phantom.create (ph) ->
-
-        describe "#fromPromise()", ->
-            ph.createPage (page) ->
-                page.include
-
-        describe "#asEventStream()", ->
-            ph.createPage (page) ->
-                page.includeJs("") #include jquery 
-                page.includeJs("") #include underscore 
-                page.injectJs #inject Electron
-                test = page.evaluate #evaluate test
-            it "should", ->
-            ###
+# test fromPromise using a promise library
