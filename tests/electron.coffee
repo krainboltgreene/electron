@@ -43,4 +43,7 @@ describe "Electron", ->
             reactSpyInterval.should.have.been.calledWith (new Event(5))
             reactSpyInterval.should.have.been.calledTwice
 
+    describe "#fromPromise() - TODO", ->
+        it "TODO", ->
+
 # test fromPromise using a promise library
