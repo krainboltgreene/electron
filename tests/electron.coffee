@@ -2,7 +2,6 @@ EventEmitter = require("events").EventEmitter
 chai   = require "chai"
 sinon  = require "sinon"
 should = chai.should()
-jsdom  = require "jsdom"
 
 chai.use(require "sinon-chai")
 
